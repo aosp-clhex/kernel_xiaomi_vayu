@@ -115,3 +115,4 @@ obj-$(CONFIG_TOUCHSCREEN_FTS)	+= focaltech_touch/
 obj-$(CONFIG_TOUCHSCREEN_NT36xxx) += nt36xxx/
 obj-$(CONFIG_TOUCHSCREEN_NT36xxx) += spi-xiaomi-tp.o
 obj-$(CONFIG_TOUCHSCREEN_COMMON)	+= tp_common.o
+obj-$(CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE) += xiaomi/
