@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo apt-get install bc python2 ccache binutils-aarch64-linux-gnu cpio
+sudo apt update && sudo apt-get install bc python2 ccache binutils-aarch64-linux-gnu cpio
 
 kernel_dir="${PWD}"
 CCACHE=$(command -v ccache)
