@@ -366,7 +366,7 @@ HOSTCXX      = g++
 HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 \
 		-fomit-frame-pointer -std=gnu89 $(HOST_LFS_CFLAGS)
 HOSTCXXFLAGS := -O2 $(HOST_LFS_CFLAGS)
-HOSTLDFLAGS  := $(HOST_LFS_LDFLAGS)
+HOSTLDFLAGS  += $(HOST_LFS_LDFLAGS)
 HOST_LOADLIBES := $(HOST_LFS_LIBS)
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
@@ -681,6 +681,8 @@ endif
 # of objdump for processing symbol versions and exports
 LLVM_AR		:= llvm-ar
 LLVM_NM		:= llvm-nm
+HOSTLDFLAGS	+= -fuse-ld=lld
+HOSTCFLAGS += -fuse-ld=lld
 export LLVM_AR LLVM_NM
 endif
 
