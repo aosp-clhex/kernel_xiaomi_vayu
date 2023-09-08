@@ -6,14 +6,14 @@ objdir="${kernel_dir}/out"
 anykernel=$HOME/anykernel
 builddir="${kernel_dir}/build"
 ZIMAGE=$kernel_dir/out/arch/arm64/boot/Image
-kernel_name="Litten-vayu"
+kernel_name="Rectilia"
 zip_name="$kernel_name-$(date +"%d%m%Y-%H%M").zip"
 TC_DIR=$HOME/tc/
 CLANG_DIR=$TC_DIR/clang-r458507
 export CONFIG_FILE="vayu_defconfig"
 export ARCH="arm64"
-export KBUILD_BUILD_HOST=raghavt20
-export KBUILD_BUILD_USER=raghav
+export KBUILD_BUILD_HOST=clhexftw
+export KBUILD_BUILD_USER=home
 
 export PATH="$CLANG_DIR/bin:$PATH"
 
@@ -59,7 +59,7 @@ completion()
     COMPILED_DTBO=arch/arm64/boot/dtbo.img
     if [[ -f ${COMPILED_IMAGE} && ${COMPILED_DTBO} ]]; then
 
-        git clone -q https://github.com/raghavt20/AnyKernel3 -b vayu $anykernel
+        git clone -q https://github.com/clhexftw/AnyKernel3 -b master $anykernel
 
         mv -f $ZIMAGE ${COMPILED_DTBO} $anykernel
 
