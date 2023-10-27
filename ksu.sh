@@ -2,7 +2,7 @@ echo "Fetching KSU Patch"
 git fetch https://github.com/aosp-clhex/kernel_xiaomi_vayu ksu
 echo "Applying KSU Patch"
 git cherry-pick d24fd4077dbf5cdc1922ac540a8b5a2a93b19fce
-git cherry-pick cb1b315cf8c2
+git cherry-pick d6d30e77064b
 git submodule init
 git submodule update --remote --merge
 echo "Renaming Kernel to Rectilia-KSU"
