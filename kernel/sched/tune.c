@@ -60,6 +60,27 @@ struct schedtune {
 	/* Hint to bias scheduling of tasks on that SchedTune CGroup
 	 * towards higher capacity CPUs */
 	bool prefer_high_cap;
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	/*
+	 * This tracks the default boost value and is used to restore
+	 * the value when Dynamic SchedTune Boost is reset.
+	 */
+	int boost_default;
+
+	/* Sched Boost value for tasks on that SchedTune CGroup */
+	int sched_boost;
+
+	/* Number of ongoing boosts for this SchedTune CGroup */
+	int boost_count;
+
+	/* Lists of active and available boost slots */
+	struct boost_slot active_boost_slots;
+	struct boost_slot available_boost_slots;
+
+	/* Array of tracked boost values of each slot */
+	int slot_boost[DYNAMIC_BOOST_SLOTS_COUNT];
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 };
 
 static inline struct schedtune *css_st(struct cgroup_subsys_state *css)
@@ -96,6 +117,21 @@ static struct schedtune root_schedtune = {
 #endif
 	.prefer_idle = 0,
 	.prefer_high_cap = false,
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	.boost_default = 0,
+	.sched_boost = 0,
+	.boost_count = 0,
+	.active_boost_slots = {
+		.list = LIST_HEAD_INIT(root_schedtune.active_boost_slots.list),
+		.idx = 0,
+	},
+	.available_boost_slots = {
+		.list = LIST_HEAD_INIT(root_schedtune.available_boost_slots.list),
+		.idx = 0,
+	},
+	.slot_boost = {0},
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 };
 
 /*
@@ -682,6 +718,42 @@ static int prefer_high_cap_write(struct cgroup_subsys_state *css,
 	return 0;
 }
 
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+static s64
+sched_boost_read(struct cgroup_subsys_state *css, struct cftype *cft)
+{
+	struct schedtune *st;
+	int prefer_high_cap;
+
+	if (unlikely(!schedtune_initialized))
+		return 0;
+
+	/* Get prefer_high_cap value */
+	rcu_read_lock();
+	st = task_schedtune(p);
+	prefer_high_cap = st->prefer_high_cap;
+	rcu_read_unlock();
+
+	return prefer_high_cap;
+}
+
+static u64 prefer_high_cap_read(struct cgroup_subsys_state *css,
+				struct cftype *cft)
+{
+	struct schedtune *st = css_st(css);
+
+	return st->prefer_high_cap;
+}
+
+static int prefer_high_cap_write(struct cgroup_subsys_state *css,
+				 struct cftype *cft, u64 prefer_high_cap)
+{
+	struct schedtune *st = css_st(css);
+	st->prefer_high_cap = !!prefer_high_cap;
+
+	return 0;
+}
+
 static struct cftype files[] = {
 #ifdef CONFIG_SCHED_WALT
 	{
@@ -704,6 +776,11 @@ static struct cftype files[] = {
 		.name = "prefer_idle",
 		.read_u64 = prefer_idle_read,
 		.write_u64 = prefer_idle_write,
+	},
+	{
+		.name = "prefer_high_cap",
+		.read_u64 = prefer_high_cap_read,
+		.write_u64 = prefer_high_cap_write,
 	},
 	{
 		.name = "prefer_high_cap",

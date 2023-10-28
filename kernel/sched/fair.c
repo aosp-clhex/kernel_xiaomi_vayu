@@ -139,6 +139,11 @@ unsigned int sysctl_sched_child_runs_first __read_mostly;
 unsigned int __read_mostly sysctl_sched_energy_aware = 1;
 
 /*
+ * To enable/disable energy aware feature.
+ */
+unsigned int __read_mostly sysctl_sched_energy_aware = 1;
+
+/*
  * SCHED_OTHER wake-up granularity.
  *
  * This option delays the preemption effects of decoupled workloads
@@ -7495,6 +7500,12 @@ static int start_cpu(struct task_struct *p, bool boosted,
 
 	if (sync_boost && rd->mid_cap_orig_cpu != -1)
 		return rd->mid_cap_orig_cpu;
+
+#ifdef CONFIG_FUSE_SHORTCIRCUIT
+	if (ht_fuse_boost && p->fuse_boost)
+		return rd->mid_cap_orig_cpu == -1 ?
+			rd->max_cap_orig_cpu : rd->mid_cap_orig_cpu;
+#endif
 
 	/* A task always fits on its rtg_target */
 	if (rtg_target) {
