@@ -8,7 +8,7 @@ builddir="${kernel_dir}/build"
 ZIMAGE=$kernel_dir/out/arch/arm64/boot/Image
 kernel_name="Rectilia-vayu"
 zip_name="$kernel_name-$(date +"%d%m%Y-%H%M").zip"
-CLANG_DIR=$HOME/tc/clang-r416183b
+CLANG_DIR=$HOME/tc/clang-r498229b
 export CONFIG_FILE="vayu_defconfig"
 export ARCH="arm64"
 export KBUILD_BUILD_HOST=clhexftw
@@ -18,7 +18,7 @@ export PATH="$CLANG_DIR/bin:$PATH"
 
 if ! [ -d "$CLANG_DIR" ]; then
     echo "Toolchain not found! Cloning to $CLANG_DIR..."
-    if ! git clone -q --depth=1 --single-branch https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b -b lineage-20.0 $CLANG_DIR; then
+    if ! git clone -q --depth=1 --single-branch https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r498229b/ -b 13.0 $CLANG_DIR; then
         echo "Cloning failed! Aborting..."
         exit 1
     fi
