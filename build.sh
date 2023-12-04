@@ -1,4 +1,5 @@
 #!/bin/bash
+sudo apt-get install bc python2 ccache binutils-aarch64-linux-gnu cpio
 
 kernel_dir="${PWD}"
 CCACHE=$(command -v ccache)
@@ -8,6 +9,7 @@ builddir="${kernel_dir}/build"
 ZIMAGE=$kernel_dir/out/arch/arm64/boot/Image
 kernel_name="Rectilia-vayu"
 zip_name="$kernel_name-$(date +"%d%m%Y-%H%M").zip"
+TC_DIR=$HOME/tc
 CLANG_DIR=$HOME/tc/clang-r498229b
 export CONFIG_FILE="vayu_defconfig"
 export ARCH="arm64"
@@ -18,7 +20,7 @@ export PATH="$CLANG_DIR/bin:$PATH"
 
 if ! [ -d "$CLANG_DIR" ]; then
     echo "Toolchain not found! Cloning to $CLANG_DIR..."
-    if ! git clone -q --depth=1 --single-branch https://github.com/aosp-clhex/android_prebuilts_clang_kernel_linux-x86_clang -b r498229b $CLANG_DIR; then
+    if ! git clone -q --depth=1 --single-branch https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/ -b master $TC_DIR; then
         echo "Cloning failed! Aborting..."
         exit 1
     fi
