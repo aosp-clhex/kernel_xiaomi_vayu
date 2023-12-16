@@ -1,3 +1,2 @@
-DEFCONFIG="vayu_defconfig"
-make O=out ARCH=arm64 $DEFCONFIG savedefconfig
-cp out/defconfig arch/arm64/configs/$DEFCONFIG
+make ARCH=arm64 O=out vayu_defconfig
+cp out/.config arch/arm64/configs/vayu_defconfig
