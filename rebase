@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Replace with your actual range
+range="4bee439da69658f10ca038c39b03531dd83e7fa5^..8cb6b3f335289e00d64c8cd8110f1248e802016a"
+
+commits=$(git rev-list --reverse $range)
+
+for commit in $commits; do
+    echo "Cherry-picking $commit"
+    git cherry-pick $commit
+
+    if [ $? -ne 0 ]; then
+        if git status | grep -q "nothing to commit"; then
+            echo "Empty commit $commit, skipping"
+            git cherry-pick --skip
+        else
+            echo "Conflict in $commit, skipping"
+            git cherry-pick --skip
+        fi
+    fi
+done
