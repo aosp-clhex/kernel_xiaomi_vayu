@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo apt update && sudo -H apt-get install bc python2 ccache binutils-aarch64-linux-gnu cpio
+sudo -H apt-get install bc python2 ccache binutils-aarch64-linux-gnu cpio
 
 kernel_dir="${PWD}"
 CCACHE=$(command -v ccache)
@@ -20,7 +20,7 @@ export PATH="$CLANG_DIR/bin:$PATH"
 
 if ! [ -d "$CLANG_DIR" ]; then
     echo "Toolchain not found! Cloning to $CLANG_DIR..."
-    if ! git clone -q --depth=1 --single-branch https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/ -b master $TC_DIR; then
+    if ! git clone --depth=1 --single-branch https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/ -b master $TC_DIR; then
         echo "Cloning failed! Aborting..."
         exit 1
     fi
@@ -69,11 +69,10 @@ completion()
         find . -name "*.zip" -type f -delete
         zip -r AnyKernel.zip *
         mv AnyKernel.zip $zip_name
-        mv $anykernel/$zip_name $HOME/$zip_name
+        mv $anykernel/$zip_name /workspace/$zip_name
         rm -rf $anykernel
         END=$(date +"%s")
         DIFF=$(($END - $START))
-        curl --upload-file $HOME/$zip_name https://free.keep.sh; echo
         rm $HOME/$zip_name
         echo -e ${LGR} "############################################"
         echo -e ${LGR} "############# OkThisIsEpic!  ##############"
