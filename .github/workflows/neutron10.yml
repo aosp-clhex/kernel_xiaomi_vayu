@@ -1,0 +1,62 @@
+name: Kernel Build (Neutron Clang Pinned - FORKY)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex python2 ccache zip unzip git \
+            binutils-aarch64-linux-gnu build-essential libssl-dev curl wget ca-certificates
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('**/*.c','**/*.h') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
+
+      - name: Download Neutron Clang (Pinned 18.0.0-05012024)
+        run: |
+          mkdir -p $HOME/toolchains && cd $HOME/toolchains
+          wget -q https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/download/05012024/neutron-clang-05012024.tar.zst
+          tar --zstd -xf neutron-clang-05012024.tar.zst
+          mv neutron-clang-05012024 neutron-clang
+          echo "$HOME/toolchains/neutron-clang/bin" >> $GITHUB_PATH
+
+      - name: Make build.sh executable
+        run: chmod +x build.sh
+
+      - name: Build kernel
+        run: |
+          ./build.sh 2>&1 | tee build_console.log
+
+      - name: Collect and upload zip
+        run: |
+          ZIP=$(ls *.zip 2>/dev/null || ls /workspace/*.zip 2>/dev/null || true)
+          if [ -z "$ZIP" ]; then
+            echo "No zip found!" && exit 1
+          fi
+          echo "$ZIP" > zipfile.txt
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            build_console.log
+            zipfile.txt
