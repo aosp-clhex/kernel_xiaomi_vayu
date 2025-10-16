@@ -1,91 +1,68 @@
 #!/bin/bash
-sudo -H apt-get install bc python2 ccache binutils-aarch64-linux-gnu cpio
+set -e
 
+# --- basic setup ---
 kernel_dir="${PWD}"
-CCACHE=$(command -v ccache)
 objdir="${kernel_dir}/out"
-anykernel=$HOME/anykernel
+anykernel="$HOME/anykernel"
 builddir="${kernel_dir}/build"
-ZIMAGE=$kernel_dir/out/arch/arm64/boot/Image
-kernel_name="Rectilia-vayu-KSUNEXT"
-zip_name="$kernel_name-$(date +"%d%m%Y-%H%M").zip"
-TC_DIR=$HOME/tc
-CLANG_DIR=$HOME/tc/clang-r530567
-export CONFIG_FILE="vayu_defconfig"
-export ARCH="arm64"
-export KBUILD_BUILD_HOST=clhexftw
-export KBUILD_BUILD_USER=home
+mkdir -p "$objdir" "$builddir"
 
-export PATH="$CLANG_DIR/bin:$PATH"
-
-if ! [ -d "$CLANG_DIR" ]; then
-    echo "Toolchain not found! Cloning to $CLANG_DIR..."
-    if ! git clone --depth=1 --single-branch https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/ -b master $TC_DIR; then
-        echo "Cloning failed! Aborting..."
-        exit 1
-    fi
+# --- compiler detection ---
+if command -v clang >/dev/null 2>&1; then
+  export PATH="$(dirname "$(command -v clang)"):$PATH"
+  echo "==> Using clang from: $(command -v clang)"
+else
+  echo "Error: clang not found in PATH!"
+  exit 1
 fi
 
-# Colors
-NC='\033[0m'
-RED='\033[0;31m'
-LRD='\033[1;31m'
-LGR='\033[1;32m'
+# --- environment vars ---
+export ARCH=arm64
+export SUBARCH=arm64
+export CC="clang"
+export CROSS_COMPILE=aarch64-linux-gnu-
+export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+export LLVM=1
+export LLVM_IAS=1
+export KBUILD_BUILD_USER="meel"
+export KBUILD_BUILD_HOST="github"
 
-make_defconfig()
-{
-    START=$(date +"%s")
-    echo -e ${LGR} "########### Generating Defconfig ############${NC}"
-    make -s ARCH=${ARCH} O=${objdir} ${CONFIG_FILE} -j$(nproc --all)
-}
-compile()
-{
-    cd ${kernel_dir}
-    echo -e ${LGR} "######### Compiling kernel #########${NC}"
-    make -j$(nproc --all) \
-    O=out \
-    ARCH=${ARCH}\
-    CC="ccache clang" \
-    CLANG_TRIPLE="aarch64-linux-gnu-" \
-    CROSS_COMPILE="aarch64-linux-gnu-" \
-    CROSS_COMPILE_ARM32="arm-linux-gnueabi-" \
-    LLVM=1 \
-    LLVM_IAS=1
-}
+# --- build start ---
+echo "==> Starting kernel build..."
+make O="$objdir" vayu_defconfig
+make -j"$(nproc)" O="$objdir"
 
-completion()
-{
-    cd ${objdir}
-    COMPILED_IMAGE=arch/arm64/boot/Image
-    COMPILED_DTBO=arch/arm64/boot/dtbo.img
-    if [[ -f ${COMPILED_IMAGE} && ${COMPILED_DTBO} ]]; then
+# --- packaging ---
+KIMG=""
+if [[ -f ${objdir}/arch/arm64/boot/Image ]]; then
+  KIMG="${objdir}/arch/arm64/boot/Image"
+elif [[ -f ${objdir}/arch/arm64/boot/Image.gz ]]; then
+  echo "Decompressing Image.gz..."
+  gunzip -c ${objdir}/arch/arm64/boot/Image.gz > ${objdir}/arch/arm64/boot/Image
+  KIMG="${objdir}/arch/arm64/boot/Image"
+fi
 
-        git clone -q https://github.com/clhexftw/AnyKernel3 -b master $anykernel
+if [[ -z "$KIMG" ]]; then
+  echo "Error: Kernel Image not found!"
+  exit 1
+fi
 
-        mv -f $ZIMAGE ${COMPILED_DTBO} $anykernel
+mkdir -p "$anykernel"
+cp -f "$KIMG" "$anykernel"/Image
 
-        cd $anykernel
-        find . -name "*.zip" -type f
-        find . -name "*.zip" -type f -delete
-        zip -r AnyKernel.zip *
-        mv AnyKernel.zip $zip_name
-        mv $anykernel/$zip_name /workspace/$zip_name
-        rm -rf $anykernel
-        END=$(date +"%s")
-        DIFF=$(($END - $START))
-        rm $HOME/$zip_name
-        echo -e ${LGR} "############################################"
-        echo -e ${LGR} "############# OkThisIsEpic!  ##############"
-        echo -e ${LGR} "############################################${NC}"
-        exit 0
-    else
-        echo -e ${RED} "############################################"
-        echo -e ${RED} "##         This Is Not Epic :'(           ##"
-        echo -e ${RED} "############################################${NC}"
-        exit 1
-    fi
-}
-make_defconfig
-compile
-completion
-cd ${kernel_dir}
+if [[ -f ${objdir}/arch/arm64/boot/dtbo.img ]]; then
+  cp -f ${objdir}/arch/arm64/boot/dtbo.img "$anykernel"/dtbo.img
+  echo "==> Added dtbo.img"
+else
+  echo "==> dtbo.img not found, skipping"
+fi
+
+cd "$anykernel"
+
+# --- zip naming ---
+zipname="Rectilia_Vayu_$(date +%Y%m%d-%H%M).zip"
+zip -r9 "$zipname" ./*
+
+mv -f "$zipname" /workspace/"$zipname" 2>/dev/null || mv -f "$zipname" "$kernel_dir"/
+echo "==> Build done: $zipname"
